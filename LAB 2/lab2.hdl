@@ -1,0 +1,136 @@
+Q-1: 1-bit Register (Bit.hdl)Code snippetCHIP Bit {
+    IN in, load;
+    OUT out;
+
+    PARTS:
+    Mux(a=prevOut, b=in, sel=load, out=muxOut);
+    DFF(in=muxOut, out=prevOut, out=out);
+}
+Q-2: 16-bit Register (Register.hdl)Code snippetCHIP Register {
+    IN in[16], load;
+    OUT out[16];
+
+    PARTS:
+    Bit(in=in[0], load=load, out=out[0]);
+    // ... repeated for bits 1 through 15
+    Bit(in=in[15], load=load, out=out[15]);
+}
+
+
+
+Q-3: HDL Code for 8-Register Register File (RAM8)Code snippetCHIP RAM8 { 
+    IN in[16], load, address[3]; 
+    OUT out[16]; 
+    
+    PARTS: 
+    // Step 1: Route load to correct register 
+    DMux8Way(in=load, sel=address, 
+             a=l0, b=l1, c=l2, d=l3, 
+             e=l4, f=l5, g=l6, h=l7); 
+             
+    // Step 2: 8 Registers 
+    Register(in=in, load=l0, out=r0); 
+    Register(in=in, load=l1, out=r1); 
+    Register(in=in, load=l2, out=r2); 
+    Register(in=in, load=l3, out=r3); 
+    Register(in=in, load=l4, out=r4); 
+    Register(in=in, load=l5, out=r5); 
+    Register(in=in, load=l6, out=r6); 
+    Register(in=in, load=l7, out=r7); 
+    
+    // Step 3: Select output from correct register 
+    Mux8Way16(a=r0, b=r1, c=r2, d=r3, 
+              e=r4, f=r5, g=r6, h=r7, 
+              sel=address, out=out); 
+} 
+   Q-4: HDL Code for RAM64Code snippetCHIP RAM64 {
+    IN in[16], load, address[6];
+    OUT out[16];
+
+    PARTS:
+    // Step 1: Route load to correct RAM8 chip using upper 3 bits
+    DMux8Way(in=load, sel=address[3..5], 
+             a=l0, b=l1, c=l2, d=l3, 
+             e=l4, f=l5, g=l6, h=l7);
+
+    // Step 2: 8 RAM8 chips receiving lower 3 bits for internal addressing
+    RAM8(in=in, load=l0, address=address[0..2], out=r0);
+    RAM8(in=in, load=l1, address=address[0..2], out=r1);
+    RAM8(in=in, load=l2, address=address[0..2], out=r2);
+    RAM8(in=in, load=l3, address=address[0..2], out=r3);
+    RAM8(in=in, load=l4, address=address[0..2], out=r4);
+    RAM8(in=in, load=l5, address=address[0..2], out=r5);
+    RAM8(in=in, load=l6, address=address[0..2], out=r6);
+    RAM8(in=in, load=l7, address=address[0..2], out=r7);
+
+    // Step 3: Select output from the correct RAM8 chip
+    Mux8Way16(a=r0, b=r1, c=r2, d=r3, 
+              e=r4, f=r5, g=r6, h=r7, 
+              sel=address[3..5], out=out);
+}
+Q-5: HDL Code for Larger RAM Blocks (RAM512 and RAM4K)1. RAM512 (Uses 8 × RAM64 blocks)Code snippetCHIP RAM512 {
+    IN in[16], load, address[9];
+    OUT out[16];
+
+    PARTS:
+    // Route load to one of 8 RAM64 chips using address[6..8]
+    DMux8Way(in=load, sel=address[6..8], 
+             a=l0, b=l1, c=l2, d=l3, e=l4, f=l5, g=l6, h=l7);
+
+    // 8 RAM64 sub-chips using address[0..5]
+    RAM64(in=in, load=l0, address=address[0..5], out=r0);
+    RAM64(in=in, load=l1, address=address[0..5], out=r1);
+    RAM64(in=in, load=l2, address=address[0..5], out=r2);
+    RAM64(in=in, load=l3, address=address[0..5], out=r3);
+    RAM64(in=in, load=l4, address=address[0..5], out=r4);
+    RAM64(in=in, load=l5, address=address[0..5], out=r5);
+    RAM64(in=in, load=l6, address=address[0..5], out=r6);
+    RAM64(in=in, load=l7, address=address[0..5], out=r7);
+
+    // Multiplex output from correct RAM64
+    Mux8Way16(a=r0, b=r1, c=r2, d=r3, e=r4, f=r5, g=r6, h=r7, 
+              sel=address[6..8], out=out);
+}
+2. RAM4K (Uses 8 × RAM512 blocks)Code snippetCHIP RAM4K {
+    IN in[16], load, address[12];
+    OUT out[16];
+
+    PARTS:
+    // Route load to one of 8 RAM512 chips using address[9..11]
+    DMux8Way(in=load, sel=address[9..11], 
+             a=l0, b=l1, c=l2, d=l3, e=l4, f=l5, g=l6, h=l7);
+
+    // 8 RAM512 sub-chips using address[0..8]
+    RAM512(in=in, load=l0, address=address[0..8], out=r0);
+    RAM512(in=in, load=l1, address=address[0..8], out=r1);
+    RAM512(in=in, load=l2, address=address[0..8], out=r2);
+    RAM512(in=in, load=l3, address=address[0..8], out=r3);
+    RAM512(in=in, load=l4, address=address[0..8], out=r4);
+    RAM512(in=in, load=l5, address=address[0..8], out=r5);
+    RAM512(in=in, load=l6, address=address[0..8], out=r6);
+    RAM512(in=in, load=l7, address=address[0..8], out=r7);
+
+    // Multiplex output from correct RAM512
+    Mux8Way16(a=r0, b=r1, c=r2, d=r3, e=r4, f=r5, g=r6, h=r7, 
+              sel=address[9..11], out=out);
+}
+
+
+
+
+Q-6: Program Counter (PC.hdl)
+Code snippet
+CHIP PC {
+    IN in[16], load, inc, reset;
+    OUT out[16];
+
+    PARTS:
+    // Increment logic
+    Inc16(in=registerOut, out=incOut);
+    Mux16(a=registerOut, b=incOut, sel=inc, out=m1);
+    Mux16(a=m1, b=in, sel=load, out=m2);
+    Mux16(a=m2, b=false, sel=reset, out=m3);
+    
+    // Register loop with constant load=true since PC always updates state
+    Register(in=m3, load=true, out=registerOut, out=out);
+}
